@@ -1,54 +1,131 @@
 <?php
 /**
- * login Page
+ * User Index Page
  *
  * @author    Joshua Connor <connorj4@southernct.edu>
  * @copyright 2026 
  * @date      2026-02-24
  * @version   1.0
+ * new update: 2026-06-01
  */
-  /* Quick Paths */
-  include_once (realpath(dirname(__FILE__).'/php/path.php'));
+error_reporting(E_ALL); // Report all errors
+ini_set('display_errors', 0); // set to 1 to display errors, 0 to hide them
 
+  /* Quick Paths */
+  /* note the 2 after __FILE__, because it's 2 directories deep */
+  include_once (realpath(dirname(__FILE__, 2).'/php/session.php')); // Session will be included in header.php
+  include_once (realpath(dirname(__FILE__, 2).'/php/path.php')); // Path will be included in header.php
+  // Session will be included in header.php
 
   /* Page Name */
-  $page_name = "home";
+  $page_name = "user";
 
-  /* Start The Session */
-  session_start(); 
+?>
+<?php
+//======================================================================
+// USER DASHBOARD PAGE
+//======================================================================
+
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // set to 1 to display errors, 0 to hide them
+
+  /* Quick Paths */
+  /* note the 2 after __FILE__, because it's 2 directories deep */
+  include_once (realpath(dirname(__FILE__, 2).'/php/session.php')); // Session will be included in header.php
+  include_once (realpath(dirname(__FILE__, 2).'/php/path.php')); // Path will be included in header.php
+  // Session will be included in header.php
+  
+  /* Check Role */
+  include_once (ROOT_SRC_PATH .'/check_user.php'); // Check user role and redirect if not authorized
+
+  $user_check = $_SESSION['login_user'];
+  // Check user and get roll session from database
+
+  /* Page Name */
+  $page_name = "admin"; // Set page name for active link in header
 
 ?>
 <!doctype html>
 <html lang="en">
   <head>
-    <?php include_once "./include/head.php"; ?>
+  <?php include_once (ROOT_PATH . '/include/head.php'); // Include head.php ?>
   </head>
-  <body>
-    <?php include_once "./include/header.php"; ?>
+  <body class="<?php echo $page_name; ?>">
+
+  <?php include_once (ROOT_PATH . '/include/header.php'); // Include header.php ?>
     <main role="main" class="container">
-      <div class="row justify-content-sm-center">
-        <div class="col-sm-4">
-          <h1>Login</h1>
-          <form action="./php/authenticate.php" method="post">
-            <div class="input-group mb-3">
-              <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="username" placeholder="Enter username" name="username" required>
-            </div>
-            <div class="input-group mb-3">
-              <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Enter Password" name="password" required>
-            </div>
-            
-            <?php include_once (ROOT_PATH . '/db/error_rprt.php'); ?>
-            <button type="submit" class="btn btn-primary">Log In</button>
-          </form>
-          <hr />
-          <p class="text-center">
-              <small>
-                <a href="./create_account.php">Create An Account</a> | <a href="./forgot_pass.php">Forgot Password</a>
-              </small>
-          </p>
-        </div>
+
+    <div class="container text-center">
+  <div class="row align-items-center">
+    
+    <div class="col">
+      <div class="mb-6">
+      <h1>Welcome <?php echo $_SESSION['user_first'] ?></h1>
+      <p class="lead">This is the <?php echo $_SESSION['user_type'] ?> dashboard.</p>
+      <p>Only users with the  role can access this page.</p>
       </div>
+      <hr class="mb-4">
+      <section class="mb-4">
+      <h2>User Information</h2>
+      <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">First</th>
+      <th scope="col">Last</th>
+      <th scope="col">Email</th>
+      <th scope="col">Username</th>
+      <th scope="col">Role</th>
+    </tr>
+  </thead>
+  <tbody>
+    <?php
+      include_once (ROOT_PATH . '/php/config.php');
+
+      $result = $db_connection->query(
+        "SELECT 
+            u.user_id,
+            c.first_name,
+            c.last_name,
+            c.email,
+            cr.username,
+            r.role_type
+        FROM Users u
+        INNER JOIN Contacts c ON u.contact_id = c.contact_id
+        INNER JOIN Credentials cr ON u.user_id = cr.user_id
+        INNER JOIN Roles r ON u.role_id = r.role_id
+        WHERE cr.username = '$user_check'
+        ");
+
+      if ($result->num_rows > 0) {
+        // output data of each row
+        while($row = $result->fetch_assoc()) {
+          echo "<tr>";
+          echo "<th scope='row'>" . $row["user_id"] . "</th>";
+          echo "<td>" . htmlspecialchars($row["first_name"]) . "</td>";
+          echo "<td>" . htmlspecialchars($row["last_name"]) . "</td>";
+          echo "<td>" . htmlspecialchars($row["email"]) . "</td>";
+          echo "<td>" . htmlspecialchars($row["username"]) . "</td>";
+          echo "<td>" . htmlspecialchars($row["role_type"]) . "</td>";
+          echo "</tr>";
+        }
+      } else {
+        echo "<tr><td colspan='6'>No users found</td></tr>";
+      }
+      $db_connection->close();
+    ?>
+
+  </tbody>
+</table>
+</section>
+      
+    </div>
+    
+  </div>
+</div>  
+       
     </main>
-    <?php include_once "./include/footer.php"; ?>
+    <?php include_once (ROOT_PATH . '/include/footer.php'); ?>
   </body>
 </html>
+
